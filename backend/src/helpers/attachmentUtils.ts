@@ -4,7 +4,6 @@ import { TodosAccess } from './todosAcess'
 
 const XAWS = AWSXRay.captureAWS(AWS)
 
-// TODO: Implement the fileStogare logic
 const todosAccess = new TodosAccess()
 const s3 = new XAWS.S3({ signatureVersion: 'v4' })
 

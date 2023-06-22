@@ -9,8 +9,6 @@ const XAWS = AWSXRay.captureAWS(AWS)
 
 const logger = createLogger('TodosAccess')
 
-// TODO: Implement the dataLayer logic
-
 export class TodosAccess {
   constructor(
     private readonly dynamoDBClient: DocumentClient = new XAWS.DynamoDB.DocumentClient(),
@@ -33,6 +31,22 @@ export class TodosAccess {
     return items as TodoItem[]
   }
 
+  async searchTodosDB(userId: string, todoName: string): Promise<TodoItem[]> {
+    const result = await this.dynamoDBClient.query({
+      TableName: this.todosTable,
+      IndexName: this.idIndex,
+      KeyConditionExpression: 'userId = :userId',
+      FilterExpression: 'begins_with (todoName, :todoName)',
+      ExpressionAttributeValues: {
+        ':userId': userId,
+        ':todoName': todoName
+      }
+    }).promise()
+  
+    const items = result.Items
+    return items as TodoItem[]
+  }
+
   async createTodoDB(todoItem: TodoItem): Promise<TodoItem> {
     logger.info(`createTodoDB ${todoItem}`)
     await this.dynamoDBClient.put({
@@ -51,14 +65,14 @@ export class TodosAccess {
         todoId,
         userId
       },
-      UpdateExpression: 'set #name = :name, dueDate = :dueDate, done = :done',
+      UpdateExpression: 'set #todoName = :todoName, dueDate = :dueDate, done = :done',
       ExpressionAttributeValues: {
-        ':name': todoUpdate.name,
+        ':todoName': todoUpdate.todoName,
         ':dueDate': todoUpdate.dueDate,
         ':done': todoUpdate.done
       },
       ExpressionAttributeNames: {
-        '#name': 'name'
+        '#todoName': 'todoName'
       }
     }).promise()
   }

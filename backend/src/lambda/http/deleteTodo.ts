@@ -11,7 +11,6 @@ import { deleteTodo } from '../../helpers/todos';
 export const handler = middy(
   async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
     const todoId = event.pathParameters.todoId
-    // TODO: Remove a TODO item by id
     
     const userId = getUserId(event)
     await deleteTodo(todoId,userId)

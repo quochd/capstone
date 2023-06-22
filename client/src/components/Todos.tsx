@@ -2,6 +2,7 @@ import dateFormat from 'dateformat'
 import { History } from 'history'
 import update from 'immutability-helper'
 import * as React from 'react'
+import { Parser } from 'json2csv';  //todo
 import {
   Button,
   Checkbox,
@@ -14,7 +15,7 @@ import {
   Loader
 } from 'semantic-ui-react'
 
-import { createTodo, deleteTodo, getTodos, patchTodo } from '../api/todos-api'
+import { createTodo, deleteTodo, getTodos, patchTodo ,searchTodos} from '../api/todos-api'
 import Auth from '../auth/Auth'
 import { Todo } from '../types/Todo'
 
@@ -26,18 +27,24 @@ interface TodosProps {
 interface TodosState {
   todos: Todo[]
   newTodoName: string
-  loadingTodos: boolean
+  loadingTodos: boolean,
+  name : string
 }
 
 export class Todos extends React.PureComponent<TodosProps, TodosState> {
   state: TodosState = {
     todos: [],
     newTodoName: '',
-    loadingTodos: true
+    loadingTodos: true,
+    name : ''
   }
 
   handleNameChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     this.setState({ newTodoName: event.target.value })
+  }
+
+  handleSearchChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    this.setState({ name: event.target.value })
   }
 
   onEditButtonClick = (todoId: string) => {
@@ -51,14 +58,10 @@ export class Todos extends React.PureComponent<TodosProps, TodosState> {
         name: this.state.newTodoName,
         dueDate
       })
-      console.log("Before newTodo: "+newTodo)
-
        this.setState({
         todos: [...this.state.todos, newTodo], 
         newTodoName: ''
       })
-
-      console.log("After newTodo: "+newTodo.name)
     } catch {
       alert('Todo creation failed')
     }
@@ -79,7 +82,7 @@ export class Todos extends React.PureComponent<TodosProps, TodosState> {
     try {
       const todo = this.state.todos[pos]
       await patchTodo(this.props.auth.getIdToken(), todo.todoId, {
-        name: todo.name,
+        name: todo.todoName,
         dueDate: todo.dueDate,
         done: !todo.done
       })
@@ -91,6 +94,32 @@ export class Todos extends React.PureComponent<TodosProps, TodosState> {
     } catch {
       alert('Todo check failed')
     }
+  }
+
+  onSearchSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    try {
+      const todos = await searchTodos(this.props.auth.getIdToken(), this.state.name)
+      this.setState({
+        todos,
+        loadingTodos: false
+      })
+    } catch (e) {
+      alert(`Failed to search: ${(e as Error).message}`)
+    }
+  }
+
+  downloadCSV = () => {
+    const fields = ['todoName', 'dueDate', 'done']; 
+    const json2csvParser = new Parser({ fields });
+    const csv = json2csvParser.parse(this.state.todos);
+    const element = document.createElement('a');
+    const file = new Blob([csv], { type: 'text/csv' });
+    element.href = URL.createObjectURL(file);
+    element.download = 'todos.csv';
+    document.body.appendChild(element);
+    element.click();
+    document.body.removeChild(element);
   }
 
   async componentDidMount() {
@@ -109,10 +138,11 @@ export class Todos extends React.PureComponent<TodosProps, TodosState> {
     return (
       <div>
         <Header as="h1">TODOs</Header>
-
+        {this.renderSearchInput()}
         {this.renderCreateTodoInput()}
 
         {this.renderTodos()}
+        <Button onClick={this.downloadCSV}>Download CSV</Button>
       </div>
     )
   }
@@ -134,6 +164,28 @@ export class Todos extends React.PureComponent<TodosProps, TodosState> {
             placeholder="To change the world..."
             onChange={this.handleNameChange}
           />
+        </Grid.Column>
+        <Grid.Column width={16}>
+          <Divider />
+        </Grid.Column>
+      </Grid.Row>
+    )
+  }
+
+  renderSearchInput() {
+    return (
+      <Grid.Row>
+        <Grid.Column width={16}>
+          <form onSubmit={this.onSearchSubmit}>
+            <Input
+              fluid
+              icon={<Icon name="search" style={{ color: 'blue', fontWeight: 'bold' }} />}
+              placeholder="Enter to search..."
+              value={this.state.name}
+              onChange={this.handleSearchChange}
+              style={{ border: '3px solid red', borderRadius: '6px' }}
+            />
+          </form>
         </Grid.Column>
         <Grid.Column width={16}>
           <Divider />
@@ -173,7 +225,7 @@ export class Todos extends React.PureComponent<TodosProps, TodosState> {
                 />
               </Grid.Column>
               <Grid.Column width={10} verticalAlign="middle">
-                {todo.name}
+                {todo.todoName}
               </Grid.Column>
               <Grid.Column width={3} floated="right">
                 {todo.dueDate}

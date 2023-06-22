@@ -6,13 +6,17 @@ import { createLogger } from '../utils/logger'
 import * as uuid from 'uuid'
 import { TodoUpdate } from '../models/TodoUpdate';
 
-// TODO: Implement businessLogic
 const logger = createLogger('todos')
 const todosAccess = new TodosAccess()
 
 export async function getTodos(userId: string): Promise<TodoItem[]> {
   logger.info(`getTodos ${userId}`)
   return await todosAccess.getTodosDB(userId)
+}
+
+export async function searchTodos(userId: string, name: string): Promise<TodoItem[]> {
+  logger.info(`searchTodos ${userId}`)
+  return await todosAccess.searchTodosDB(userId, name)
 }
 
 export async function createTodo(userId: string, createTodoRequest: CreateTodoRequest): Promise<TodoItem> {
@@ -24,7 +28,7 @@ export async function createTodo(userId: string, createTodoRequest: CreateTodoRe
     todoId,
     createdAt: new Date().toISOString(),
     done: false,
-    name: createTodoRequest.name,
+    todoName: createTodoRequest.name,
     dueDate: createTodoRequest.dueDate
   }
 
@@ -36,7 +40,7 @@ export async function updateTodo(todoId: string, userId: string, udateTodoReques
 
   const newTodo: TodoUpdate = {
     done: udateTodoRequest.done,
-    name: udateTodoRequest.name,
+    todoName: udateTodoRequest.name,
     dueDate: udateTodoRequest.dueDate
   }
 

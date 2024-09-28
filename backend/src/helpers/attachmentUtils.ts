@@ -14,9 +14,8 @@ export async function createAttachmentPresignedUrl(userId: string, todoId: strin
   const presignedUrl =  s3.getSignedUrl('putObject', {
     Bucket: bucketName,
     Key: todoId,
-    Expires: urlExpiration
+    Expires:  parseInt(urlExpiration)
   })
-
   await todosAccess.updateAttachmentUrlDB(userId, todoId, `https://${bucketName}.s3.amazonaws.com/${todoId}`)
   return presignedUrl
 }

@@ -1,4 +1,3 @@
-org: iamcomback
 app: serverless-todo-app
 service: serverless-todo-app
 
@@ -9,7 +8,7 @@ plugins:
   
 provider:
   name: aws
-  runtime: nodejs14.x
+  runtime: nodejs16.x
 
   stage: ${opt:stage, 'dev'}
   region: ${opt:region, 'us-east-1'}
@@ -24,9 +23,6 @@ provider:
     ATTACHMENT_S3_BUCKET: serverless-c5-todo-images-${self:provider.stage}
     SIGNED_URL_EXPIRATION: 300
 
-  logs:
-    # Enable API Gateway logs
-    restApi: true
 
 functions:
 
@@ -163,6 +159,9 @@ functions:
 
 resources:
   Resources:   
+
+
+
     GatewayResponseDefault4XX:
       Type: AWS::ApiGateway::GatewayResponse
       Properties:
@@ -205,9 +204,6 @@ resources:
       Type: AWS::S3::Bucket
       Properties:
         BucketName: ${self:provider.environment.ATTACHMENT_S3_BUCKET}
-        OwnershipControls:
-          Rules:
-            - ObjectOwnership: ObjectWriter
         PublicAccessBlockConfiguration:
           BlockPublicAcls: false
           BlockPublicPolicy: false
@@ -240,4 +236,14 @@ resources:
               Principal: '*'
               Action: 's3:GetObject'
               Resource: 'arn:aws:s3:::${self:provider.environment.ATTACHMENT_S3_BUCKET}/*'
+            - Sid: PublicPutForPutBucketObjects
+              Effect: Allow
+              Principal: '*'
+              Action: 's3:PutObject'
+              Resource: 'arn:aws:s3:::${self:provider.environment.ATTACHMENT_S3_BUCKET}/*'
+              Condition:
+                StringEquals:
+                  's3:x-amz-acl': 'bucket-owner-full-control'
+
+
         Bucket: !Ref AttachmentsBucket

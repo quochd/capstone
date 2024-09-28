@@ -7,7 +7,7 @@ import { cors, httpErrorHandler } from 'middy/middlewares'
 import { UpdateTodoRequest } from '../../requests/UpdateTodoRequest'
 import { getUserId } from '../utils'
 
-import { updateTodo } from '../../helpers/todos';
+import { updateTodo } from '../../businessLogic/todos';
 
 export const handler = middy(
   async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
@@ -19,10 +19,6 @@ export const handler = middy(
 
     return {
       statusCode: 200,
-      headers: {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Credentials': true
-      },
       body: ''
     }
   }
